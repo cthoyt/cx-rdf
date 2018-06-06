@@ -1,0 +1,19 @@
+[run]
+branch = True
+source = cx_rdf
+omit =
+    src/cx_rdf/__main__.py
+    src/cx_rdf/cli.py
+    tests/*
+    docs/*
+
+[paths]
+source =
+    src/cx_rdf
+    .tox/*/lib/python*/site-packages/cx_rdf
+
+[report]
+show_missing = True
+exclude_lines =
+    def __str__
+    def __repr__
