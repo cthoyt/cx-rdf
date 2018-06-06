@@ -2,9 +2,11 @@
 
 """Tests for exporting CX to RDF."""
 
+import json
 import unittest
 
 from cx_rdf import export
+from cx_rdf.export_abstract import export_abstract
 from ndex2 import NiceCXNetwork
 from rdflib import Graph
 
@@ -12,8 +14,8 @@ from rdflib import Graph
 class TestExport(unittest.TestCase):
     """Tests for exporting CX to RDF."""
 
-    def test_export(self):
-        """Test exporting CX to RDFlib."""
+    def setUp(self):
+        """Set up nice CX network and JSON."""
         ncx = NiceCXNetwork()
         ncx.set_name('Test Name')
 
@@ -38,7 +40,22 @@ class TestExport(unittest.TestCase):
         ncx.add_node_attribute(property_of=d, name='Color', values='Blue')
         ncx.add_node_attribute(property_of=e, name='Color', values='Blue')
 
-        cx_json = ncx.to_cx()
+        self.cx_json = json.loads(json.dumps(ncx.to_cx()))
 
-        graph = export(cx_json)
+    def test_export(self):
+        """Test exporting CX to RDFlib."""
+        # json_print(self.cx_json)
+
+        graph = export(self.cx_json)
         self.assertIsInstance(graph, Graph)
+
+        print(graph.serialize(format='turtle').decode('utf-8'))
+
+    def test_export_abstract(self):
+        """Test exporting CX to RDFlib."""
+        # json_print(self.cx_json)
+
+        graph = export_abstract(self.cx_json)
+        self.assertIsInstance(graph, Graph)
+
+        print(graph.serialize(format='turtle').decode('utf-8'))
