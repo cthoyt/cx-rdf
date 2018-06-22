@@ -9,6 +9,8 @@ __all__ = [
     'cx_to_rdf_graph'
 ]
 
+ALLOWED_POLICIES = ['aspect', 'abstract', 'predicate']
+
 
 def cx_to_rdf_graph(cx_json, policy: Optional[str] = None) -> rdflib.Graph:
     """Export CX as RDF with the given policy.
@@ -16,7 +18,13 @@ def cx_to_rdf_graph(cx_json, policy: Optional[str] = None) -> rdflib.Graph:
     :param cx_json:
     :param policy: Defaults to the 'aspect' policy. Can also use 'abstract' or 'predicate'
     """
-    if policy is None or policy == 'aspect':
+    if policy is None:
+        return aspect_policy.export(cx_json)
+
+    if policy not in ALLOWED_POLICIES:
+        ValueError('invalid policy given: {}. Use one of: {}'.format(policy, ', '.format(ALLOWED_POLICIES)))
+
+    if policy == 'aspect':
         return aspect_policy.export(cx_json)
 
     if policy == 'abstract':
@@ -24,5 +32,3 @@ def cx_to_rdf_graph(cx_json, policy: Optional[str] = None) -> rdflib.Graph:
 
     if policy == 'predicate':
         return predicate_policy.export(cx_json)
-
-    raise ValueError('invalid policy given: {}'.format(policy))
