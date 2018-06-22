@@ -22,10 +22,10 @@ The ``-f`` option can be used to specify the format RDFLib uses to serialize. It
 ``xml``, but other formats like ``turtle`` are often preferred.
 """
 
-from .export import export
+from .io import cx_to_rdf_graph
 
 __all__ = [
-    'export',
+    'cx_to_rdf_graph',
 ]
 
 __version__ = '0.0.1-dev'

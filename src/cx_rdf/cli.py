@@ -7,7 +7,7 @@ import sys
 
 import click
 
-from .export import export
+from .io import cx_to_rdf_graph
 
 EXPORT_FORMATS = ['xml', 'n3', 'turtle', 'nt', 'pretty-xml', 'trix', 'trig', 'nquads']
 
@@ -20,11 +20,12 @@ def main():
 @main.command()
 @click.option('-i', '--file', type=click.File(), default=sys.stdin)
 @click.option('-o', '--destination', type=click.File('w'), default=sys.stdout)
-@click.option('-f', '--rdf-format', choices=EXPORT_FORMATS)
-def cx_to_rdf(file, destination, rdf_format):
+@click.option('-p', '--policy', help='RDF schema policy')
+@click.option('-f', '--rdf-format', type=click.Choice(EXPORT_FORMATS))
+def cx_to_rdf(file, destination, policy, rdf_format):
     """Convert CX to RDF."""
     cx_json = json.load(file)
-    graph = export(cx_json)
+    graph = cx_to_rdf_graph(cx_json, policy=policy)
     graph.serialize(destination=destination, format=rdf_format)
 
 

@@ -5,34 +5,45 @@
 import json
 import unittest
 
-from cx_rdf import export
-from cx_rdf.export_abstract import export_abstract
 from ndex2 import NiceCXNetwork
+from ndex2.cx import CX_CONSTANTS
+from ndex2.cx.aspects.CitationElement import CitationElement
+from ndex2.cx.aspects.SupportElement import SupportElement
 from rdflib import Graph
+
+from cx_rdf import cx_to_rdf_graph
 
 
 class TestExport(unittest.TestCase):
     """Tests for exporting CX to RDF."""
 
-    def setUp(self):
+    @classmethod
+    def setUpClass(cls):
         """Set up nice CX network and JSON."""
         ncx = NiceCXNetwork()
         ncx.set_name('Test Name')
 
         a, b, c, d, e = [
-            ncx.create_node(letter)
+            ncx.create_node(node_name=letter)
             for letter in 'ABCDE'
         ]
 
-        ncx.create_edge(
+        e1 = ncx.create_edge(
             edge_source=a,
             edge_target=b,
         )
 
-        ncx.create_edge(
+        e2 = ncx.create_edge(
             edge_source=b,
             edge_target=c,
+            edge_interaction='increases',
         )
+
+        c1 = CitationElement(id=0, title='Hi')
+        ncx.add_citation(c1)
+
+        s1 = SupportElement(id=0, text='Hi')
+        ncx.add_support(s1)
 
         ncx.add_node_attribute(property_of=a, name='Color', values='Red')
         ncx.add_node_attribute(property_of=b, name='Color', values='Red')
@@ -40,22 +51,34 @@ class TestExport(unittest.TestCase):
         ncx.add_node_attribute(property_of=d, name='Color', values='Blue')
         ncx.add_node_attribute(property_of=e, name='Color', values='Blue')
 
-        self.cx_json = json.loads(json.dumps(ncx.to_cx()))
+        ncx.add_edge_attribute(property_of=e1, name='Color', values='Green')
+        ncx.add_edge_attribute(property_of=e2, name='Color', values='Purple')
 
-    def test_export(self):
-        """Test exporting CX to RDFlib."""
-        # json_print(self.cx_json)
+        ncx.add_edge_citations(edge_id=e1, citation_id=c1.get_id())
 
-        graph = export(self.cx_json)
+        edge_support_element_1 = {CX_CONSTANTS.PROPERTY_OF: [e1], CX_CONSTANTS.SUPPORTS: [c1.get_id()]}
+        ncx.add_edge_supports(edge_supports_element=edge_support_element_1)
+
+        cls.cx_json = json.loads(json.dumps(ncx.to_cx()))
+        print(json.dumps(cls.cx_json, indent=2))
+
+    def test_export_aspect_policy(self):
+        graph = cx_to_rdf_graph(self.cx_json, policy='aspect')
         self.assertIsInstance(graph, Graph)
 
+        print(f'\nResulting ASPECT graph ({len(graph)} triplets):\n')
         print(graph.serialize(format='turtle').decode('utf-8'))
 
-    def test_export_abstract(self):
-        """Test exporting CX to RDFlib."""
-        # json_print(self.cx_json)
-
-        graph = export_abstract(self.cx_json)
+    def test_export_predicate_policy(self):
+        graph = cx_to_rdf_graph(self.cx_json, policy='predicate')
         self.assertIsInstance(graph, Graph)
 
+        print(f'\nResulting PREDICATE graph ({len(graph)} triplets):\n')
+        print(graph.serialize(format='turtle').decode('utf-8'))
+
+    def test_export_abstract_policy(self):
+        graph = cx_to_rdf_graph(self.cx_json, policy='abstract')
+        self.assertIsInstance(graph, Graph)
+
+        print(f'\nResulting ABSRAC graph ({len(graph)} triplets):\n')
         print(graph.serialize(format='turtle').decode('utf-8'))
