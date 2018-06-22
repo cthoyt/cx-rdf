@@ -30,6 +30,7 @@ INSTALL_REQUIRES = [
     'ndex2',
     'rdflib',
     'click',
+    'owlready2',
 ]
 
 EXTRAS_REQUIRE = {
@@ -39,6 +40,7 @@ TESTS_REQUIRE = [
 ENTRY_POINTS = {
     'console_scripts': [
         'cx_to_rdf = cx_rdf.cli:cx_to_rdf',
+        'owl_to_cx = cx_rdf.cli:owl_to_cx',
     ]
 }
 DEPENDENCY_LINKS = [

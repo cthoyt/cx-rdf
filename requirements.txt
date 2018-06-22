@@ -1,3 +1,4 @@
 ndex2
 rdflib
 click
+owlready2
