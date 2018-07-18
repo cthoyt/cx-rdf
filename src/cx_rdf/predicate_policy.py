@@ -42,12 +42,11 @@ __all__ = [
 log = logging.getLogger(__name__)
 
 
-def export(cx_json) -> rdflib.Graph:
+def export(cx_json: CxType) -> rdflib.Graph:
     """Convert a CX JSON object to an RDFLib :class:`rdflib.Graph`.
 
     This policy uses CX standards for NDEx to make more meaningful RDF.
 
-    :param list[dict] cx_json: A CX JSON object
     """
     exporter = _ConciseEdgeExporter()
     return exporter.export(cx_json)
