@@ -28,7 +28,7 @@ class Exporter(ABC):
         self.id_support = {}
 
         self.graph = graph or rdflib.Graph()
-        self.graph.namespace_manager.bind('cx', CX)
+        bind_cx_namespace(self.graph)
         self.document = BNode()
         self._add_document(RDF.type, CX.network)
 
