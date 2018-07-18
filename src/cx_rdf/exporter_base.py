@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-""""""
+"""A base class for CX export policies."""
 
 import logging
 from abc import ABC, abstractmethod
@@ -11,6 +11,8 @@ from rdflib.term import Node
 from typing import Optional
 
 from .constants import CX
+from .typing import CxType
+from .utils import bind_cx_namespace
 
 __all__ = [
     'Exporter',
@@ -20,6 +22,9 @@ log = logging.getLogger(__name__)
 
 
 class Exporter(ABC):
+    """The base class for CX to RDF exporters."""
+
+    policy = None
 
     def __init__(self, graph: Optional[rdflib.Graph] = None):
         self.id_node = {}
@@ -31,6 +36,11 @@ class Exporter(ABC):
         bind_cx_namespace(self.graph)
         self.document = BNode()
         self._add_document(RDF.type, CX.network)
+
+        if self.policy is None:
+            raise TypeError(f'policy has not been set on class {self.__class__}')
+
+        self._add_document(CX.policy, self.policy)
 
     def _add_label(self, s: Node, label: str):
         """Add a label to a node."""
@@ -85,7 +95,7 @@ class Exporter(ABC):
         return support
 
     @abstractmethod
-    def export(self, cx_json) -> rdflib.Graph:
+    def export(self, cx_json: CxType) -> rdflib.Graph:
         """Convert a CX json to a RDFLib graph.
 
         :param cx_json: A CX JSON object

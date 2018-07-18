@@ -28,12 +28,17 @@ This makes it possible to quickly generate networks using a SPARQL query like:
 
 import itertools as itt
 import logging
+from typing import Dict, List
 
 import rdflib
 from rdflib import BNode, Literal, RDF
 
+from nicecxModel.cx import known_aspects
+from .abstract_policy import handle_aspects
 from .constants import CX
 from .exporter_base import Exporter
+from .typing import CxType
+from .utils import iterate_aspect_fragments
 
 __all__ = [
     'export',
@@ -47,6 +52,7 @@ def export(cx_json: CxType) -> rdflib.Graph:
 
     This policy uses CX standards for NDEx to make more meaningful RDF.
 
+    :param cx_json: A CX JSON object
     """
     exporter = _ConciseEdgeExporter()
     return exporter.export(cx_json)
@@ -55,51 +61,68 @@ def export(cx_json: CxType) -> rdflib.Graph:
 class _ConciseEdgeExporter(Exporter):
     """A class to mediate shared state in the export function."""
 
-    def export(self, cx_json) -> rdflib.Graph:
+    policy = CX.concise
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        #: keep track of aspects by name, since they're represented by a BNode
+        self.aspects = {}
+
+    def export(self, cx_json: CxType) -> rdflib.Graph:
         """Convert a CX JSON object to an RDFLib :class:`rdflib.Graph`.
 
         This policy uses CX standards for NDEx to make more meaningful RDF.
 
-        :param list[dict] cx_json: A CX JSON object
+        :param cx_json: A CX JSON object
         """
-        for aspect in cx_json:
-            for name, attributes in aspect.items():
-                self._extend_aspect(name, attributes)
+
+        for name, elements in iterate_aspect_fragments(cx_json):
+            self._extend_aspect(name, elements)
 
         return self.graph
 
-    def _extend_aspect(self, name, entries):
+    def _extend_aspect(self, name: str, elements: List[Dict]):
         """Extend an aspect.
 
         :param str name: The name of the aspect
-        :param entries: A
+        :param elements:
         """
         if name == 'numberVerification':
-            n = entries[0]['longNumber']
+            n = elements[0]['longNumber']
             self.graph.add((self.document, CX.has_number_verification, Literal(n)))
         elif name == 'nodes':
-            self._extend_node_entries(entries)
+            self._extend_node_elements(elements)
         elif name == 'edges':
-            self._extend_edge_entries(entries)
+            self._extend_edge_elements(elements)
         elif name == 'metaData':
-            self._extend_metadata_aspect_values(entries)
+            self._extend_metadata_aspect_values(elements)
         elif name == 'nodeAttributes':
-            self._extend_node_attribute_entries(entries)
+            self._extend_node_attribute_elements(elements)
         elif name == 'edgeAttributes':
-            self._extend_edge_attribute_entries(entries)
+            self._extend_edge_attribute_elements(elements)
         elif name == 'networkAttributes':
-            self._extend_network_attribute_entries(entries)
+            self._extend_network_attribute_elements(elements)
         elif name == 'citations':
-            self._extend_citation_entries(entries)
+            self._extend_citation_elements(elements)
         elif name == 'edgeCitations':
-            self._extend_edge_citation_entries(entries)
+            self._extend_edge_citation_elements(elements)
         elif name == 'supports':
-            self._extend_support_entries(entries)
+            self._extend_support_elements(elements)
         elif name == 'edgeSupports':
-            self._extend_edge_support_entries(entries)
+            self._extend_edge_support_elements(elements)
+        # elif name == '@context':
+        #    self._extend_context(elements)
+        elif name in known_aspects:
+            log.warning('unhandled known aspect: %s', name)
+            self._abstract_handle_aspect(name, elements)
+            # raise ValueError(f'unhandled known aspect: {name}')
         else:
-            raise ValueError('unhandled aspect:\n{}\n'.format(name, entries))
-            # log.warning('unhandled aspect: %s', name)
+            log.warning('unhandled unknown aspect: %s', name)
+            # raise ValueError(f'unhandled unknown aspect: {name}')
+            self._abstract_handle_aspect(name, elements)
+
+    def _abstract_handle_aspect(self, aspect_name, elements):
+        return handle_aspects(self.graph, self.aspects, self.document, aspect_name, elements)
 
     def _extend_metadata_aspect_values(self, attributes):
         for attribute in attributes:
@@ -113,14 +136,16 @@ class _ConciseEdgeExporter(Exporter):
         self.graph.add((self.document, CX.has_metadata, metadata))
         self._add_label(metadata, name)
 
-        version = attribute['version']
-        self.graph.add((metadata, CX.aspect_version, Literal(version)))
+        version = attribute.get('version')
+        if version is not None:  # FIXME isn't this supposed to be required?
+            self.graph.add((metadata, CX.aspect_version, Literal(version)))
 
         count = attribute['elementCount']
         self.graph.add((metadata, CX.aspect_elements_count, Literal(count)))
 
-        group = attribute['consistencyGroup']
-        self.graph.add((metadata, CX.aspect_consistency_group, Literal(group)))
+        group = attribute.get('consistencyGroup')
+        if group is not None:  # FIXME isn't this supposed to be required?
+            self.graph.add((metadata, CX.aspect_consistency_group, Literal(group)))
 
         counter = attribute.get('idCounter')
         if counter:
@@ -128,13 +153,15 @@ class _ConciseEdgeExporter(Exporter):
 
         return metadata
 
-    def _extend_node_entries(self, entries):
-        for entry in entries:
-            self._extend_node_entry(entry)
+    # def _extend_context(self, elements):
 
-    def _extend_node_entry(self, entry) -> BNode:
-        node_id = entry['@id']
-        node_label = entry.get('n')
+    def _extend_node_elements(self, elements):
+        for element in elements:
+            self._extend_node_element(element)
+
+    def _extend_node_element(self, element) -> BNode:
+        node_id = element['@id']
+        node_label = element.get('n')
 
         node = self.ensure_node(node_id)
         if node_label is not None:
@@ -142,7 +169,7 @@ class _ConciseEdgeExporter(Exporter):
 
         return node
 
-    def _extend_edge_entries(self, entries):
+    def _extend_edge_elements(self, entries):
         for value in entries:
             self._extend_edge_entry(value)
 
@@ -164,7 +191,7 @@ class _ConciseEdgeExporter(Exporter):
 
         return edge
 
-    def _extend_node_attribute_entries(self, entries):
+    def _extend_node_attribute_elements(self, entries):
         for entry in entries:
             self._extend_node_attribute_entry(entry)
 
@@ -175,12 +202,20 @@ class _ConciseEdgeExporter(Exporter):
         self.graph.add((node_attribute, RDF.type, CX.node_attribute))
         self.graph.add((node, CX.node_has_attribute, node_attribute))
 
-        self.graph.add((node_attribute, CX.attribute_has_name, Literal(entry['n'])))
-        self.graph.add((node_attribute, CX.attribute_has_value, Literal(entry['v'])))
+        name = entry['n']
+        data_type = entry.get('d', 'string')
+
+        self.graph.add((node_attribute, CX.attribute_has_name, Literal(name)))
+
+        if data_type.startswith('list_of'):
+            for value in entry['v']:
+                self.graph.add((node_attribute, CX.attribute_has_value, Literal(value)))
+        else:
+            self.graph.add((node_attribute, CX.attribute_has_value, Literal(entry['v'])))
 
         return node_attribute
 
-    def _extend_edge_attribute_entries(self, entries):
+    def _extend_edge_attribute_elements(self, entries):
         for entry in entries:
             self._extend_edge_attribute_entry(entry)
 
@@ -195,7 +230,7 @@ class _ConciseEdgeExporter(Exporter):
 
         return edge_attribute
 
-    def _extend_network_attribute_entries(self, entries):
+    def _extend_network_attribute_elements(self, entries):
         for entry in entries:
             self._add_network_attribute_entry(entry)
 
@@ -214,11 +249,11 @@ class _ConciseEdgeExporter(Exporter):
         if data_type is None or data_type == 'string':
             self.graph.add((network_attribute, CX.network_attribute_has_key, Literal(value)))
         else:
-            raise TypeError('unhandled data type: {} {}'.format(data_type, value))
+            raise TypeError(f'unhandled data type: {data_type} {value}')
 
         return network_attribute
 
-    def _extend_citation_entries(self, entries):
+    def _extend_citation_elements(self, entries):
         for entry in entries:
             self._extend_citation_entry(entry)
 
@@ -234,7 +269,7 @@ class _ConciseEdgeExporter(Exporter):
 
         return citation
 
-    def _extend_edge_citation_entries(self, entries):
+    def _extend_edge_citation_elements(self, entries):
         for entry in entries:
             self._extend_edge_citation_entry(entry)
 
@@ -247,7 +282,7 @@ class _ConciseEdgeExporter(Exporter):
             citation = self.ensure_citation(citation_id)
             self.graph.add((edge, CX.edge_has_citation, citation))
 
-    def _extend_support_entries(self, entries):
+    def _extend_support_elements(self, entries):
         for entry in entries:
             self._extend_support_entry(entry)
 
@@ -263,7 +298,7 @@ class _ConciseEdgeExporter(Exporter):
 
         return support
 
-    def _extend_edge_support_entries(self, entries):
+    def _extend_edge_support_elements(self, entries):
         for entry in entries:
             self._extend_edge_support_entry(entry)
 

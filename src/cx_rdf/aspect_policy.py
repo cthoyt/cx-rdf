@@ -4,12 +4,16 @@
 
 import itertools as itt
 import logging
+from typing import Dict, List
 
 import rdflib
 from rdflib import BNode, Literal, RDF, RDFS
 
+from nicecxModel.cx import known_aspects
 from .constants import CX
 from .exporter_base import Exporter
+from .typing import CxType
+from .utils import iterate_aspect_fragments
 
 __all__ = [
     'export',
@@ -18,14 +22,13 @@ __all__ = [
 log = logging.getLogger(__name__)
 
 
-def export(cx_json) -> rdflib.Graph:
+def export(cx_json: CxType) -> rdflib.Graph:
     """Convert a CX JSON object to an RDFLib :class:`rdflib.Graph`.
 
     This policy uses CX standards for NDEx to make more meaningful RDF.
 
-    :param list[dict] cx_json: A CX JSON object
+    :param cx_json: A CX JSON object
     :return: An RDFLib graph
-    :rtype: rdflib.Graph
     """
     exporter = _Exporter()
     return exporter.export(cx_json)
@@ -34,45 +37,43 @@ def export(cx_json) -> rdflib.Graph:
 class _Exporter(Exporter):
     """A class to mediate shared state in the export function."""
 
+    policy = CX.aspect
+
     def __init__(self):
         super().__init__()
         #: keep track of aspects by name, since they're represented by a BNode
         self.aspects = {}
 
-    def export(self, cx_json) -> rdflib.Graph:
+    def export(self, cx_json: CxType) -> rdflib.Graph:
         """Convert a CX JSON object to an RDFLib :class:`rdflib.Graph`.
 
         This policy uses CX standards for NDEx to make more meaningful RDF.
 
-        :param list[dict] cx_json: A CX JSON object
+        :param cx_json: A CX JSON object
         :return: An RDFLib graph
-        :rtype: rdflib.Graph
         """
-        for aspect in cx_json:
-            for name, attributes in aspect.items():
-                self._extend_aspect(name, attributes)
+        for name, attributes in iterate_aspect_fragments(cx_json):
+            self._extend_aspect(name, attributes)
 
         return self.graph
 
-    def get_aspect(self, aspect_name):
+    def get_aspect(self, aspect_name: str) -> BNode:
         """Get an aspect by name.
 
-        :param str aspect_name: The name of the aspect
-        :rtype: rdflib.BNode
+        :param aspect_name: The name of the aspect
         """
-        aspect = self.aspects.get(aspect_name)
+        aspect_node = self.aspects.get(aspect_name)
+        if aspect_node is not None:
+            return aspect_node
 
-        if aspect is not None:
-            return aspect
+        aspect_node = self.aspects[aspect_name] = BNode()
+        self.graph.add((aspect_node, RDF.type, CX.aspect))
+        self.graph.add((aspect_node, RDFS.label, Literal(aspect_name)))
+        self.graph.add((self.document, CX.has_aspect, aspect_node))
 
-        aspect = self.aspects[aspect_name] = BNode()
-        self.graph.add((aspect, RDF.type, CX.aspect))
-        self.graph.add((aspect, RDFS.label, Literal(aspect_name)))
-        self.graph.add((self.document, CX.has_aspect, aspect))
+        return aspect_node
 
-        return aspect
-
-    def _extend_aspect(self, name, entries):
+    def _extend_aspect(self, name: str, entries: List[Dict]):
         """Add a CX group to the graph.
 
         :param str name:
@@ -103,14 +104,16 @@ class _Exporter(Exporter):
             self._extend_support_entries(aspect, entries)
         elif name == 'edgeSupports':
             self._extend_edge_support_entries(aspect, entries)
+        elif name in known_aspects:
+            raise ValueError(f'unhandled known aspect: {name}')
         else:
-            raise ValueError('unhandled aspect: {}'.format(name))
+            raise ValueError(f'unhandled unknown aspect: {name}')
 
     def _extend_metadata_entries(self, entries):
         for entry in entries:
             self._extend_metadata_entry(entry)
 
-    def _extend_metadata_entry(self, entry):
+    def _extend_metadata_entry(self, entry: Dict):
         name = entry['name']
         aspect = self.get_aspect(name)
 
@@ -199,7 +202,7 @@ class _Exporter(Exporter):
         if data_type is None or data_type == 'string':
             self.graph.add((network_attribute, CX.network_attribute_has_key, Literal(value)))
         else:
-            raise TypeError('unhandled data type: {} {}'.format(data_type, value))
+            raise TypeError(f'unhandled data type: {data_type} {value}')
 
         return network_attribute
 

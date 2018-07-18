@@ -3,12 +3,14 @@
 """Functions for exporting CX to RDF."""
 
 import logging
+from typing import Dict, List, Optional
 
 import rdflib
 from rdflib import BNode, Literal, RDF, RDFS
-from typing import Optional
 
 from .constants import CX
+from .typing import CxType
+from .utils import bind_cx_namespace, iterate_aspect_fragments
 
 __all__ = [
     'export',
@@ -17,55 +19,74 @@ __all__ = [
 log = logging.getLogger(__name__)
 
 
-def _iterate_aspects(cx_json):
-    for element in cx_json:
-        for aspect_name, entries in element.items():
-            yield aspect_name, entries
-
-
-def export(cx_json, graph: Optional[rdflib.Graph] = None) -> rdflib.Graph:
+def export(cx_json: CxType, graph: Optional[rdflib.Graph] = None) -> rdflib.Graph:
     """Convert a CX JSON object to an RDFLib :class:`rdflib.Graph`.
 
     This policy for serializing CX to RDF is the most general, and only manages to encode the structure of a CX
     document in RDF. It has little semantic meaning.
 
-    :param list[dict] cx_json: A CX JSON object
+    :param cx_json: A CX JSON object
+    :param graph: An RDFLib graph (to append to)
     :return: An RDFLib graph
     """
     if graph is None:
         graph = rdflib.Graph()
 
-    graph.namespace_manager.bind('cx', CX)
+    bind_cx_namespace(graph)
 
     document = BNode()
     graph.add((document, RDF.type, CX.network))
+    graph.add((document, CX.policy, CX.abstract_network))
 
     aspects = {}
 
-    for aspect_name, entries in _iterate_aspects(cx_json):
-        aspect = aspects.get(aspect_name)
-        if aspect is None:
-            aspect = BNode()
-            graph.add((aspect, RDF.type, CX.aspect))
-            graph.add((document, CX.has_aspect, aspect))
-
-            graph.add((aspect, RDFS.label, Literal(aspect_name)))
-
-            aspects[aspect_name] = aspect
-
-        for entry_dict in entries:
-            entry = BNode()
-            graph.add((entry, RDF.type, CX.entry))
-            graph.add((aspect, CX.has_entry, entry))
-
-            for k, v in entry_dict.items():
-                attribute = BNode()
-                graph.add((attribute, RDF.type, CX.attribute))
-                graph.add((entry, CX.has_attribute, attribute))
-
-                graph.add((attribute, CX.has_key, Literal(k)))
-
-                # need to handle different types here
-                graph.add((attribute, CX.has_value, Literal(v)))
+    for aspect_name, elements in iterate_aspect_fragments(cx_json):
+        handle_aspects(graph, aspects, document, aspect_name, elements)
 
     return graph
+
+
+def handle_aspects(graph, aspects, document, aspect_name, elements):
+    aspect_node = get_aspect_node(graph, aspects, document, aspect_name)
+    handle_elements(graph, aspect_node, elements)
+
+
+def get_aspect_node(graph, aspects, document, aspect_name):
+    aspect_node = aspects.get(aspect_name)
+
+    if aspect_node is None:
+        aspect_node = aspects[aspect_name] = BNode()
+        graph.add((aspect_node, RDF.type, CX.aspect))
+        graph.add((document, CX.has_aspect, aspect_node))
+        graph.add((aspect_node, RDFS.label, Literal(aspect_name)))
+
+    return aspect_node
+
+
+def handle_elements(graph: rdflib.Graph, aspect_node: BNode, elements: List[Dict]):
+    """Handle all attributes from a CX JSON aspect."""
+    for element in elements:
+        handle_element(graph, aspect_node, element)
+
+
+def handle_element(graph: rdflib.Graph, aspect_node: BNode, element: Dict):
+    """Handle an attribute from a CX JSON aspect.
+
+    Creates a blank node, registers it to the aspect as an entry, then adds its data.
+    """
+    element_node = BNode()
+    graph.add((element_node, RDF.type, CX.attribute))
+    graph.add((aspect_node, CX.has_element, element_node))
+
+    for key, value in element.items():
+        handle_element_entries(graph, element_node, key, value)
+
+
+def handle_element_entries(graph: rdflib.Graph, element_node: BNode, key, value):
+    entry_node = BNode()
+    graph.add((entry_node, RDF.type, CX.entry))
+    graph.add((element_node, CX.has_entry, entry_node))
+
+    graph.add((entry_node, CX.has_key, Literal(key)))
+    # TODO need to handle different types here
+    graph.add((entry_node, CX.has_value, Literal(value)))
