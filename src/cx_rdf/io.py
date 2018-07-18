@@ -1,9 +1,11 @@
 # -*- coding: utf-8 -*-
 
-import rdflib
 from typing import Optional
 
+import rdflib
+
 from . import abstract_policy, aspect_policy, predicate_policy
+from .typing import CxType
 
 __all__ = [
     'cx_to_rdf_graph'
@@ -12,14 +14,14 @@ __all__ = [
 ALLOWED_POLICIES = ['aspect', 'abstract', 'predicate']
 
 
-def cx_to_rdf_graph(cx_json, policy: Optional[str] = None) -> rdflib.Graph:
+def cx_to_rdf_graph(cx_json: CxType, policy: Optional[str] = None) -> rdflib.Graph:
     """Export CX as RDF with the given policy.
 
-    :param cx_json:
-    :param policy: Defaults to the 'aspect' policy. Can also use 'abstract' or 'predicate'
+    :param cx_json: CX JSON
+    :param policy: Defaults to the 'predicate' policy. Can also use 'abstract' or 'aspect'
     """
     if policy is None:
-        return aspect_policy.export(cx_json)
+        return predicate_policy.export(cx_json)
 
     if policy not in ALLOWED_POLICIES:
         ValueError('invalid policy given: {}. Use one of: {}'.format(policy, ', '.format(ALLOWED_POLICIES)))
