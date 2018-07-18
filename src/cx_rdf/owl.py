@@ -1,15 +1,13 @@
-"""Functions to import OWL to CX"""
+# -*- coding: utf-8 -*-
 
-import json
-import sys
+"""Functions to import OWL to CX."""
+
 from owlready2 import EntityClass, Restriction, Thing, get_ontology
 
 from ndex2 import NiceCXNetwork
 
-entities = {}
 
-
-def ensure_node(cx: NiceCXNetwork, entity_class: EntityClass):
+def ensure_node(cx: NiceCXNetwork, entities, entity_class: EntityClass):
     try:
         name = EntityClass.get_name(entity_class)
     except:
@@ -37,9 +35,10 @@ def convert_owl(base_iri: str) -> NiceCXNetwork:
     onto = get_ontology(base_iri).load()
 
     cx = NiceCXNetwork()
+    entities = {}
 
     for entity_class in onto.classes():
-        edge_source = ensure_node(cx, entity_class)
+        edge_source = ensure_node(cx, entities, entity_class)
 
         if edge_source is None:
             raise ValueError('edge is none!')
@@ -51,7 +50,7 @@ def convert_owl(base_iri: str) -> NiceCXNetwork:
             if isinstance(super_class, Restriction):
                 continue
 
-            edge_target = ensure_node(cx, super_class)
+            edge_target = ensure_node(cx, entities, super_class)
 
             if edge_target is None:
                 raise ValueError('Edge taret is none for {} ({})'.format(super_class, super_class.__class__))
@@ -70,30 +69,3 @@ def convert_owl(base_iri: str) -> NiceCXNetwork:
     cx.update_consistency_group()
 
     return cx
-
-
-if __name__ == '__main__':
-    import os
-    import sys
-
-    wine_iri = 'http://www.w3.org/TR/2003/PR-owl-guide-20031209/wine'
-    wine_network = convert_owl(wine_iri)
-    wine_network.set_name('Wine!')
-    wine_network.add_network_attribute(name='iri', values=wine_iri)
-    wine_cx = wine_network.to_cx()
-    wine_cx.append({"status": [{"error": "", "success": True}]})
-    with open('wine.cx', 'w') as file:
-        json.dump(wine_cx, file, indent=2)
-
-    wine_network.upload_to(None, os.environ['NDEX_USERNAME'], os.environ['NDEX_PASSWORD'])
-
-    gene_ontology_iri = 'http://purl.obolibrary.org/obo/go/releases/2018-06-28/go.owl'
-    gene_ontology_network = convert_owl(gene_ontology_iri)
-    gene_ontology_network.set_name('Gene Ontology')
-    gene_ontology_cx = gene_ontology_network.to_cx()
-    gene_ontology_cx.append({"status": [{"error": "", "success": True}]})
-
-    gene_ontology_network.upload_to(None, os.environ['NDEX_USERNAME'], os.environ['NDEX_PASSWORD'])
-
-    with open('go.cx', 'w') as file:
-        json.dump(gene_ontology_cx, file, indent=2)
