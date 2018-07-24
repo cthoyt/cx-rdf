@@ -2,13 +2,12 @@
 
 """A base class for CX export policies."""
 
-import logging
 from abc import ABC, abstractmethod
-
-import rdflib
-from rdflib import BNode, Literal, RDF, RDFS
-from rdflib.term import Node
+import logging
 from typing import Optional
+
+from rdflib import BNode, Graph, Literal, RDF, RDFS
+from rdflib.term import Node
 
 from .constants import CX
 from .typing import CxType
@@ -26,13 +25,14 @@ class Exporter(ABC):
 
     policy = None
 
-    def __init__(self, graph: Optional[rdflib.Graph] = None):
+    def __init__(self, graph: Optional[Graph] = None):
+        """Initialize the exporter with several caches."""
         self.id_node = {}
         self.id_edge = {}
         self.id_citation = {}
         self.id_support = {}
 
-        self.graph = graph or rdflib.Graph()
+        self.graph = graph or Graph()
         bind_cx_namespace(self.graph)
         self.document = BNode()
         self._add_document(RDF.type, CX.network)
@@ -51,6 +51,7 @@ class Exporter(ABC):
         self.graph.add((self.document, p, o))
 
     def ensure_node(self, node_id: int) -> BNode:
+        """Get a node with a given identifier from CX if it exists, otherwise create a BNode for it."""
         node = self.id_node.get(node_id)
         if node is not None:
             return node
@@ -62,6 +63,7 @@ class Exporter(ABC):
         return node
 
     def ensure_edge(self, edge_id: int) -> BNode:
+        """Get an edge with a given identifier from CX if it exists, otherwise create a BNode for it."""
         edge = self.id_edge.get(edge_id)
         if edge is not None:
             return edge
@@ -73,6 +75,7 @@ class Exporter(ABC):
         return edge
 
     def ensure_citation(self, citation_id: int) -> BNode:
+        """Get a citation with a given identifier from CX if it exists, otherwise create a BNode for it."""
         citation = self.id_citation.get(citation_id)
         if citation is not None:
             return citation
@@ -84,6 +87,7 @@ class Exporter(ABC):
         return citation
 
     def ensure_support(self, support_id: int) -> BNode:
+        """Get a support with a given identifier from CX if it exists, otherwise create a BNode for it."""
         support = self.id_support.get(support_id)
         if support is not None:
             return support
@@ -95,7 +99,7 @@ class Exporter(ABC):
         return support
 
     @abstractmethod
-    def export(self, cx_json: CxType) -> rdflib.Graph:
+    def export(self, cx_json: CxType) -> Graph:
         """Convert a CX json to a RDFLib graph.
 
         :param cx_json: A CX JSON object

@@ -30,11 +30,10 @@ import itertools as itt
 import logging
 from typing import Dict, List
 
-import rdflib
-from rdflib import BNode, Literal, RDF
+from ndex2.cx import known_aspects
+from rdflib import BNode, Graph, Literal, RDF
 
-from nicecxModel.cx import known_aspects
-from .abstract_policy import handle_aspects
+from .abstract_policy import _handle_aspects
 from .constants import CX
 from .exporter_base import Exporter
 from .typing import CxType
@@ -47,7 +46,7 @@ __all__ = [
 log = logging.getLogger(__name__)
 
 
-def export(cx_json: CxType) -> rdflib.Graph:
+def export(cx_json: CxType) -> Graph:
     """Convert a CX JSON object to an RDFLib :class:`rdflib.Graph`.
 
     This policy uses CX standards for NDEx to make more meaningful RDF.
@@ -68,14 +67,13 @@ class _ConciseEdgeExporter(Exporter):
         #: keep track of aspects by name, since they're represented by a BNode
         self.aspects = {}
 
-    def export(self, cx_json: CxType) -> rdflib.Graph:
+    def export(self, cx_json: CxType) -> Graph:
         """Convert a CX JSON object to an RDFLib :class:`rdflib.Graph`.
 
         This policy uses CX standards for NDEx to make more meaningful RDF.
 
         :param cx_json: A CX JSON object
         """
-
         for name, elements in iterate_aspect_fragments(cx_json):
             self._extend_aspect(name, elements)
 
@@ -120,7 +118,7 @@ class _ConciseEdgeExporter(Exporter):
             self._abstract_handle_aspect(name, elements)
 
     def _abstract_handle_aspect(self, aspect_name, elements):
-        return handle_aspects(self.graph, self.aspects, self.document, aspect_name, elements)
+        return _handle_aspects(self.graph, self.aspects, self.document, aspect_name, elements)
 
     def _extend_metadata_aspect_values(self, attributes):
         for attribute in attributes:

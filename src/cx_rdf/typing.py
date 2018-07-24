@@ -1,5 +1,7 @@
 # -*- coding: utf-8 -*-
 
+"""Type hints for CX-RDF."""
+
 from typing import Dict, List
 
 __all__ = [

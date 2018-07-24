@@ -1,5 +1,7 @@
 # -*- coding: utf-8 -*-
 
+"""Top level input/output functions."""
+
 from typing import Optional
 
 import rdflib

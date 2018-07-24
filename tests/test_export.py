@@ -5,13 +5,12 @@
 import json
 import unittest
 
+from cx_rdf import cx_to_rdf_graph
 from ndex2 import NiceCXNetwork
 from ndex2.cx import CX_CONSTANTS
 from ndex2.cx.aspects.CitationElement import CitationElement
 from ndex2.cx.aspects.SupportElement import SupportElement
 from rdflib import Graph
-
-from cx_rdf import cx_to_rdf_graph
 
 
 class TestExport(unittest.TestCase):
@@ -63,6 +62,7 @@ class TestExport(unittest.TestCase):
         print(json.dumps(cls.cx_json, indent=2))
 
     def test_export_aspect_policy(self):
+        """Test the aspect policy."""
         graph = cx_to_rdf_graph(self.cx_json, policy='aspect')
         self.assertIsInstance(graph, Graph)
 
@@ -70,6 +70,7 @@ class TestExport(unittest.TestCase):
         print(graph.serialize(format='turtle').decode('utf-8'))
 
     def test_export_predicate_policy(self):
+        """Test the predicate policy."""
         graph = cx_to_rdf_graph(self.cx_json, policy='predicate')
         self.assertIsInstance(graph, Graph)
 
@@ -77,6 +78,7 @@ class TestExport(unittest.TestCase):
         print(graph.serialize(format='turtle').decode('utf-8'))
 
     def test_export_abstract_policy(self):
+        """Test the abstract policy."""
         graph = cx_to_rdf_graph(self.cx_json, policy='abstract')
         self.assertIsInstance(graph, Graph)
 

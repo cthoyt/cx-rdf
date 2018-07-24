@@ -2,15 +2,17 @@
 
 """Functions to import OWL to CX."""
 
-from owlready2 import EntityClass, Restriction, Thing, get_ontology
+from typing import Mapping, Type
 
 from ndex2 import NiceCXNetwork
+from owlready2 import EntityClass, get_ontology, Restriction, Thing
 
 
-def ensure_node(cx: NiceCXNetwork, entities, entity_class: EntityClass):
+def ensure_node(cx: NiceCXNetwork, entities: Mapping[Type[EntityClass], int], entity_class: EntityClass):
+    """Ensure a node in the network."""
     try:
         name = EntityClass.get_name(entity_class)
-    except:
+    except Exception:
         return
 
     node_id = cx.create_node(node_name=name)
@@ -19,7 +21,7 @@ def ensure_node(cx: NiceCXNetwork, entities, entity_class: EntityClass):
         label = entity_class.label.first()
         if label:
             cx.add_node_attribute(property_of=node_id, name='l', values=label)
-    except:
+    except Exception:
         pass
 
     entities[entity_class] = node_id

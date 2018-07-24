@@ -2,8 +2,9 @@
 
 """Utilities for CX-RDF."""
 
-import rdflib
 from typing import Dict, Iterable, List, Tuple
+
+import rdflib
 
 from .constants import CX
 from .typing import CxType

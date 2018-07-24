@@ -6,10 +6,9 @@ import itertools as itt
 import logging
 from typing import Dict, List
 
-import rdflib
-from rdflib import BNode, Literal, RDF, RDFS
+from ndex.cx import known_aspects
+from rdflib import BNode, Graph, Literal, RDF, RDFS
 
-from nicecxModel.cx import known_aspects
 from .constants import CX
 from .exporter_base import Exporter
 from .typing import CxType
@@ -22,7 +21,7 @@ __all__ = [
 log = logging.getLogger(__name__)
 
 
-def export(cx_json: CxType) -> rdflib.Graph:
+def export(cx_json: CxType) -> Graph:
     """Convert a CX JSON object to an RDFLib :class:`rdflib.Graph`.
 
     This policy uses CX standards for NDEx to make more meaningful RDF.
@@ -44,7 +43,7 @@ class _Exporter(Exporter):
         #: keep track of aspects by name, since they're represented by a BNode
         self.aspects = {}
 
-    def export(self, cx_json: CxType) -> rdflib.Graph:
+    def export(self, cx_json: CxType) -> Graph:
         """Convert a CX JSON object to an RDFLib :class:`rdflib.Graph`.
 
         This policy uses CX standards for NDEx to make more meaningful RDF.

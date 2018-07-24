@@ -5,8 +5,7 @@
 import logging
 from typing import Dict, List, Optional
 
-import rdflib
-from rdflib import BNode, Literal, RDF, RDFS
+from rdflib import BNode, Graph, Literal, RDF, RDFS
 
 from .constants import CX
 from .typing import CxType
@@ -19,7 +18,7 @@ __all__ = [
 log = logging.getLogger(__name__)
 
 
-def export(cx_json: CxType, graph: Optional[rdflib.Graph] = None) -> rdflib.Graph:
+def export(cx_json: CxType, graph: Optional[Graph] = None) -> Graph:
     """Convert a CX JSON object to an RDFLib :class:`rdflib.Graph`.
 
     This policy for serializing CX to RDF is the most general, and only manages to encode the structure of a CX
@@ -30,7 +29,7 @@ def export(cx_json: CxType, graph: Optional[rdflib.Graph] = None) -> rdflib.Grap
     :return: An RDFLib graph
     """
     if graph is None:
-        graph = rdflib.Graph()
+        graph = Graph()
 
     bind_cx_namespace(graph)
 
@@ -41,17 +40,17 @@ def export(cx_json: CxType, graph: Optional[rdflib.Graph] = None) -> rdflib.Grap
     aspects = {}
 
     for aspect_name, elements in iterate_aspect_fragments(cx_json):
-        handle_aspects(graph, aspects, document, aspect_name, elements)
+        _handle_aspects(graph, aspects, document, aspect_name, elements)
 
     return graph
 
 
-def handle_aspects(graph, aspects, document, aspect_name, elements):
-    aspect_node = get_aspect_node(graph, aspects, document, aspect_name)
-    handle_elements(graph, aspect_node, elements)
+def _handle_aspects(graph, aspects, document, aspect_name, elements):
+    aspect_node = _get_aspect_node(graph, aspects, document, aspect_name)
+    _handle_elements(graph, aspect_node, elements)
 
 
-def get_aspect_node(graph, aspects, document, aspect_name):
+def _get_aspect_node(graph, aspects, document, aspect_name):
     aspect_node = aspects.get(aspect_name)
 
     if aspect_node is None:
@@ -63,13 +62,13 @@ def get_aspect_node(graph, aspects, document, aspect_name):
     return aspect_node
 
 
-def handle_elements(graph: rdflib.Graph, aspect_node: BNode, elements: List[Dict]):
+def _handle_elements(graph: Graph, aspect_node: BNode, elements: List[Dict]):
     """Handle all attributes from a CX JSON aspect."""
     for element in elements:
-        handle_element(graph, aspect_node, element)
+        _handle_element(graph, aspect_node, element)
 
 
-def handle_element(graph: rdflib.Graph, aspect_node: BNode, element: Dict):
+def _handle_element(graph: Graph, aspect_node: BNode, element: Dict):
     """Handle an attribute from a CX JSON aspect.
 
     Creates a blank node, registers it to the aspect as an entry, then adds its data.
@@ -79,10 +78,10 @@ def handle_element(graph: rdflib.Graph, aspect_node: BNode, element: Dict):
     graph.add((aspect_node, CX.has_element, element_node))
 
     for key, value in element.items():
-        handle_element_entries(graph, element_node, key, value)
+        _handle_element_entries(graph, element_node, key, value)
 
 
-def handle_element_entries(graph: rdflib.Graph, element_node: BNode, key, value):
+def _handle_element_entries(graph: Graph, element_node: BNode, key, value):
     entry_node = BNode()
     graph.add((entry_node, RDF.type, CX.entry))
     graph.add((element_node, CX.has_entry, entry_node))
