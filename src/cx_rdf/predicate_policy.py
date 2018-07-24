@@ -110,8 +110,6 @@ class _ConciseEdgeExporter(Exporter):
             self._extend_support_elements(elements)
         elif name == 'edgeSupports':
             self._extend_edge_support_elements(elements)
-        # elif name == '@context':
-        #    self._extend_context(elements)
         elif name in known_aspects:
             log.warning('unhandled known aspect: %s', name)
             self._abstract_handle_aspect(name, elements)
@@ -152,8 +150,6 @@ class _ConciseEdgeExporter(Exporter):
             self.graph.add((metadata, CX.aspect_id_counter, Literal(counter)))
 
         return metadata
-
-    # def _extend_context(self, elements):
 
     def _extend_node_elements(self, elements):
         for element in elements:
