@@ -8,4 +8,4 @@ __all__ = [
     'CX',
 ]
 
-CX = Namespace("http://ndexbio.org/rdfs/#")
+CX = Namespace("http://ndexbio.org/rdfs#")
