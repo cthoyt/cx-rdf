@@ -136,8 +136,9 @@ class _ConciseEdgeExporter(Exporter):
         if version is not None:  # FIXME isn't this supposed to be required?
             self.graph.add((metadata, CX.aspect_version, Literal(version)))
 
-        count = attribute['elementCount']
-        self.graph.add((metadata, CX.aspect_elements_count, Literal(count)))
+        element_count = attribute.get('elementCount')
+        if element_count is not None:  # FIXME isn't this supposed to be required?
+            self.graph.add((metadata, CX.aspect_elements_count, Literal(element_count)))
 
         group = attribute.get('consistencyGroup')
         if group is not None:  # FIXME isn't this supposed to be required?
