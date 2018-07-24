@@ -22,9 +22,11 @@ The ``-f`` option can be used to specify the format RDFLib uses to serialize. It
 ``xml``, but other formats like ``turtle`` are often preferred.
 """
 
+from .constants import CX
 from .io import cx_to_rdf_graph
 
 __all__ = [
+    'CX',
     'cx_to_rdf_graph',
 ]
 
