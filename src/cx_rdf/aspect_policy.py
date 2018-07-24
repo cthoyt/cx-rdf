@@ -6,7 +6,7 @@ import itertools as itt
 import logging
 from typing import Dict, List
 
-from ndex.cx import known_aspects
+from ndex2.cx import known_aspects
 from rdflib import BNode, Graph, Literal, RDF, RDFS
 
 from .constants import CX
