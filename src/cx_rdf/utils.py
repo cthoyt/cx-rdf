@@ -6,13 +6,19 @@ from typing import Dict, Iterable, List, Tuple
 
 import rdflib
 
-from .constants import CX
+from .constants import CX, VERSION
 from .typing import CxType
 
 __all__ = [
+    'get_version',
     'iterate_aspect_fragments',
     'bind_cx_namespace',
 ]
+
+
+def get_version() -> str:
+    """Get the version of CX-RDF."""
+    return VERSION
 
 
 def iterate_aspect_fragments(cx_json: CxType) -> Iterable[Tuple[str, List[Dict]]]:

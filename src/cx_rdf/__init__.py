@@ -24,10 +24,12 @@ The ``-f`` option can be used to specify the format RDFLib uses to serialize. It
 
 from .constants import CX
 from .io import cx_to_rdf_graph
+from .utils import get_version
 
 __all__ = [
     'CX',
     'cx_to_rdf_graph',
+    'get_version'
 ]
 
 __version__ = '0.0.1-dev'

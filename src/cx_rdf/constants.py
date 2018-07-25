@@ -9,3 +9,5 @@ __all__ = [
 ]
 
 CX = Namespace("http://ndexbio.org/rdfs#")
+
+VERSION = '0.0.1-dev'
