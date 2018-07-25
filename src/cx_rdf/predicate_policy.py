@@ -109,11 +109,11 @@ class _ConciseEdgeExporter(Exporter):
         elif name == 'edgeSupports':
             self._extend_edge_support_elements(elements)
         elif name in known_aspects:
-            log.warning('unhandled known aspect: %s', name)
+            log.debug('unhandled known aspect: %s', name)
             self._abstract_handle_aspect(name, elements)
             # raise ValueError(f'unhandled known aspect: {name}')
         else:
-            log.warning('unhandled unknown aspect: %s', name)
+            log.debug('unhandled unknown aspect: %s', name)
             # raise ValueError(f'unhandled unknown aspect: {name}')
             self._abstract_handle_aspect(name, elements)
 
