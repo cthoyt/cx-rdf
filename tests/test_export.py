@@ -21,6 +21,10 @@ class TestExport(unittest.TestCase):
         """Set up nice CX network and JSON."""
         cx_network = NiceCXNetwork()
         cx_network.set_name('Test Name')
+        cx_network.set_namespaces({
+            'example': 'http://example.com/#',
+            'test': 'http://test.com/#',
+        })
 
         a, b, c, d, e = [
             cx_network.create_node(node_name=letter)
@@ -49,6 +53,14 @@ class TestExport(unittest.TestCase):
         cx_network.add_node_attribute(property_of=c, name='Color', values='Red')
         cx_network.add_node_attribute(property_of=d, name='Color', values='Blue')
         cx_network.add_node_attribute(property_of=e, name='Color', values='Blue')
+
+        cx_network.add_node_attribute(property_of=a, name='alias', values=['test:A', 'example:001'])
+        cx_network.add_node_attribute(property_of=b, name='alias', values=['test:B', 'example:002'])
+        cx_network.add_node_attribute(property_of=c, name='alias', values=['test:C', 'example:003'])
+        cx_network.add_node_attribute(property_of=d, name='alias', values=['test:D', 'example:004'])
+        cx_network.add_node_attribute(property_of=e, name='alias', values=['test:E', 'example:005'])
+
+        # add some aliases
 
         cx_network.add_edge_attribute(property_of=e1, name='Color', values='Green')
         cx_network.add_edge_attribute(property_of=e2, name='Color', values='Purple')
