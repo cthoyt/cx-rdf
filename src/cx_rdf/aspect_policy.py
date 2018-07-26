@@ -4,7 +4,7 @@
 
 import itertools as itt
 import logging
-from typing import Dict, List
+from typing import Dict, List, Optional
 
 from ndex2.cx import known_aspects
 from rdflib import BNode, Graph, Literal, RDF, RDFS
@@ -21,15 +21,16 @@ __all__ = [
 log = logging.getLogger(__name__)
 
 
-def export(cx_json: CxType) -> Graph:
+def export(cx_json: CxType, graph: Optional[Graph] = None) -> Graph:
     """Convert a CX JSON object to an RDFLib :class:`rdflib.Graph`.
 
     This policy uses CX standards for NDEx to make more meaningful RDF.
 
     :param cx_json: A CX JSON object
+    :param graph: An optional RDFLib graph to fill. If not specified, creates one.
     :return: An RDFLib graph
     """
-    exporter = _Exporter()
+    exporter = _Exporter(graph=graph)
     return exporter.export(cx_json)
 
 
@@ -38,8 +39,8 @@ class _Exporter(Exporter):
 
     policy = CX.aspect
 
-    def __init__(self):
-        super().__init__()
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
         #: keep track of aspects by name, since they're represented by a BNode
         self.aspects = {}
 
