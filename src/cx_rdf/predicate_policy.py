@@ -208,15 +208,42 @@ class _ConciseEdgeExporter(Exporter):
         self.graph.add((node, CX.node_has_attribute, node_attribute))
 
         name = entry['n']
+        values = entry['v']
         data_type = entry.get('d', 'string')
+        data_type_is_list = data_type.startswith('list_of')
 
         self.graph.add((node_attribute, CX.attribute_has_name, Literal(name)))
 
-        if data_type.startswith('list_of'):
-            for value in entry['v']:
+        if data_type_is_list:
+            for value in values:
                 self.graph.add((node_attribute, CX.attribute_has_value, Literal(value)))
         else:
-            self.graph.add((node_attribute, CX.attribute_has_value, Literal(entry['v'])))
+            self.graph.add((node_attribute, CX.attribute_has_value, Literal(values)))
+
+        if name == 'alias':  # also add URIs based on the context
+            if not data_type_is_list:
+                raise ValueError
+
+            for value in values:
+                if not value:
+                    continue
+
+                value_pairs = value.strip().split(':', 1)
+
+                if 2 != len(value_pairs):
+                    log.debug('incorrectly written pair: %s', value)
+                    continue
+
+                k, v = (x.strip() for x in value_pairs)
+
+                prefix = self.context.get(k)
+                if prefix is None:
+                    log.debug('missing prefix "%s" in context', k)
+                    continue
+
+                uri = prefix[v]
+
+                self.graph.add((node, CX.node_has_alias, uri))
 
         return node_attribute
 
