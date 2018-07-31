@@ -4,7 +4,13 @@ A utility for converting CX to RDF.
 
 Installation
 ------------
-This module has not yet been pushed to PyPI. It can be downloaded and installed from GitHub using Python36.
+This module has not yet been pushed to PyPI. It can be downloaded and installed from GitHub using Python.
+
+.. code-block:: sh
+
+    $ python3 -m pip install git+https://github.com/cthoyt/cx_rdf.git
+
+or installed in editable mode like:
 
 .. code-block:: sh
 
