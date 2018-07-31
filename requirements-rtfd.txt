@@ -1,0 +1,7 @@
+ndex2
+rdflib
+click
+owlready2
+
+# for automatically generating CLI documentation. See: https://github.com/click-contrib/sphinx-click
+sphinx-click
